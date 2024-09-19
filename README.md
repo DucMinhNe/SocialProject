@@ -129,3 +129,5 @@ This project is licensed under the MIT License.
 ## 📞 Support
 
 For questions and support, please check the documentation in the [`docs/`](./docs/) folder or open an issue.
+
+_This project is under active maintenance._
