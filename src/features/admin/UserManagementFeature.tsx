@@ -1,8 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useEffect, useState, useCallback } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { 
+  subscribeToUsers, 
+  createUser, 
+  updateUser, 
+  deleteUser,
+  searchUsers 
+} from '@/lib/userService';
+import { logAdminAction } from '@/lib/adminService';
 import { User, UserRole } from '@/types';
 
 interface UserFormData {
@@ -13,6 +21,7 @@ interface UserFormData {
 }
 
 export default function UserManagementFeature() {
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,6 +29,7 @@ export default function UserManagementFeature() {
   const [roleFilter, setRoleFilter] = useState<'ALL' | UserRole>('ALL');
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [formLoading, setFormLoading] = useState(false);
   const [formData, setFormData] = useState<UserFormData>({
     name: '',
     email: '',
@@ -27,93 +37,143 @@ export default function UserManagementFeature() {
     avatar: '',
   });
 
-  // Fetch users
-  const fetchUsers = async () => {
-    try {
-      const usersRef = collection(db, 'users');
-      const usersSnapshot = await getDocs(usersRef);
-      
-      const usersList: User[] = [];
-      usersSnapshot.forEach((doc) => {
-        const userData = doc.data();
-        usersList.push({
-          id: doc.id,
-          name: userData.name,
-          email: userData.email,
-          avatar: userData.avatar,
-          role: userData.role || 'USER',
-          createdAt: userData.createdAt?.toDate() || new Date(),
-          lastLogin: userData.lastLogin?.toDate() || new Date(),
-        });
-      });
-
-      setUsers(usersList);
-      setFilteredUsers(usersList);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Get current user
   useEffect(() => {
-    fetchUsers();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
   }, []);
 
-  // Filter users
+  // Realtime subscription to users
+  useEffect(() => {
+    console.log('🔔 Setting up realtime users subscription...');
+    
+    const unsubscribe = subscribeToUsers(
+      (usersData) => {
+        console.log(`👥 Users data updated: ${usersData.length} users`);
+        setUsers(usersData);
+        setLoading(false);
+      },
+      {
+        roleFilter: roleFilter === 'ALL' ? undefined : roleFilter,
+        sortBy: 'createdAt',
+        sortOrder: 'desc'
+      }
+    );
+
+    return () => {
+      console.log('🧹 Cleaning up users subscription...');
+      unsubscribe();
+    };
+  }, [roleFilter]);
+
+  // Client-side filtering for search
   useEffect(() => {
     let filtered = users;
 
     // Search filter
-    if (searchTerm) {
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase().trim();
       filtered = filtered.filter(user => 
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+        user.name.toLowerCase().includes(searchLower) ||
+        user.email.toLowerCase().includes(searchLower)
       );
     }
 
-    // Role filter
-    if (roleFilter !== 'ALL') {
-      filtered = filtered.filter(user => user.role === roleFilter);
-    }
-
     setFilteredUsers(filtered);
-  }, [users, searchTerm, roleFilter]);
+  }, [users, searchTerm]);
+
+  // Debounced search function for real-time search
+  const debouncedSearch = useCallback(
+    debounce(async (term: string) => {
+      if (term.trim() && term.length > 2) {
+        try {
+          const results = await searchUsers(term, {
+            roleFilter: roleFilter === 'ALL' ? undefined : roleFilter,
+            limit: 50
+          });
+          setUsers(results);
+        } catch (error) {
+          console.error('Search error:', error);
+        }
+      }
+    }, 300),
+    [roleFilter]
+  );
+
+  // Debounce utility
+  function debounce<T extends (...args: any[]) => any>(
+    func: T,
+    wait: number
+  ): (...args: Parameters<T>) => void {
+    let timeout: NodeJS.Timeout;
+    return (...args: Parameters<T>) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func(...args), wait);
+    };
+  }
 
   // Handle create/update user
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setFormLoading(true);
 
     try {
       if (editingUser) {
         // Update user
-        await updateDoc(doc(db, 'users', editingUser.id), {
+        await updateUser(editingUser.id, {
           name: formData.name,
           email: formData.email,
           role: formData.role,
           avatar: formData.avatar,
         });
+
+        // Log admin action
+        if (currentUser) {
+          await logAdminAction(
+            currentUser.uid,
+            currentUser.displayName || currentUser.email || 'Admin',
+            'UPDATE_USER',
+            editingUser.id,
+            'USER',
+            `Updated user: ${formData.name} (${formData.email})`
+          );
+        }
+
+        console.log('✅ User updated successfully');
       } else {
-        // Create new user (Note: In a real app, you'd use Firebase Auth)
-        await addDoc(collection(db, 'users'), {
+        // Create new user
+        const newUserId = await createUser({
           name: formData.name,
           email: formData.email,
           role: formData.role,
           avatar: formData.avatar,
-          createdAt: new Date(),
-          lastLogin: new Date(),
         });
+
+        // Log admin action
+        if (currentUser) {
+          await logAdminAction(
+            currentUser.uid,
+            currentUser.displayName || currentUser.email || 'Admin',
+            'CREATE_USER',
+            newUserId,
+            'USER',
+            `Created user: ${formData.name} (${formData.email})`
+          );
+        }
+
+        console.log('✅ User created successfully');
       }
 
       setShowModal(false);
       setEditingUser(null);
       setFormData({ name: '', email: '', role: 'USER', avatar: '' });
-      await fetchUsers();
     } catch (error) {
       console.error('Error saving user:', error);
+      alert('Có lỗi xảy ra khi lưu thông tin người dùng');
     } finally {
-      setLoading(false);
+      setFormLoading(false);
     }
   };
 
@@ -121,10 +181,25 @@ export default function UserManagementFeature() {
   const handleDeleteUser = async (userId: string) => {
     if (confirm('Bạn có chắc chắn muốn xóa người dùng này?')) {
       try {
-        await deleteDoc(doc(db, 'users', userId));
-        await fetchUsers();
+        await deleteUser(userId);
+
+        // Log admin action
+        if (currentUser) {
+          const deletedUser = users.find(u => u.id === userId);
+          await logAdminAction(
+            currentUser.uid,
+            currentUser.displayName || currentUser.email || 'Admin',
+            'DELETE_USER',
+            userId,
+            'USER',
+            `Deleted user: ${deletedUser?.name} (${deletedUser?.email})`
+          );
+        }
+
+        console.log('✅ User deleted successfully');
       } catch (error) {
         console.error('Error deleting user:', error);
+        alert('Có lỗi xảy ra khi xóa người dùng');
       }
     }
   };
@@ -162,7 +237,7 @@ export default function UserManagementFeature() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Quản lý người dùng</h1>
           <p className="mt-1 text-sm text-gray-600">
-            Danh sách tất cả người dùng trong hệ thống
+            Danh sách tất cả người dùng trong hệ thống - Dữ liệu realtime
           </p>
         </div>
         <button
@@ -174,6 +249,27 @@ export default function UserManagementFeature() {
           </svg>
           Thêm người dùng
         </button>
+      </div>
+
+      {/* Stats Row */}
+      <div className="bg-white p-4 rounded-lg shadow border-l-4 border-l-green-500">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+              <span className="text-sm text-gray-600">Realtime</span>
+            </div>
+            <div className="text-sm text-gray-600">
+              Tổng: <span className="font-semibold text-gray-900">{users.length}</span> người dùng
+            </div>
+            <div className="text-sm text-gray-600">
+              Hiển thị: <span className="font-semibold text-gray-900">{filteredUsers.length}</span> người dùng
+            </div>
+          </div>
+          <div className="text-xs text-gray-500">
+            Cập nhật lần cuối: {new Date().toLocaleTimeString('vi-VN')}
+          </div>
+        </div>
       </div>
 
       {/* Filters */}
@@ -336,10 +432,17 @@ export default function UserManagementFeature() {
                 <div className="flex space-x-3 pt-4">
                   <button
                     type="submit"
-                    disabled={loading}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                    disabled={formLoading}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {loading ? 'Đang lưu...' : (editingUser ? 'Cập nhật' : 'Thêm')}
+                    {formLoading ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Đang lưu...
+                      </div>
+                    ) : (
+                      editingUser ? 'Cập nhật' : 'Thêm'
+                    )}
                   </button>
                   <button
                     type="button"
