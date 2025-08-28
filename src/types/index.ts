@@ -1,9 +1,12 @@
+export type UserRole = 'USER' | 'ADMIN';
+
 export interface User {
   id: string;
   name: string;
   email: string;
   avatar?: string; // URL của avatar
   password?: string; // Không lưu password trong Firestore khi đăng nhập bằng Google
+  role: UserRole; // Role của user
   createdAt: Date;
   lastLogin: Date;
 }

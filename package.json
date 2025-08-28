@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "update-admin": "node scripts/update-admin-simple.js"
   },
   "dependencies": {
     "firebase": "^12.1.0",
