@@ -451,7 +451,7 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
                           <p className={`text-xs ${
                             message.senderId === user.uid ? 'text-blue-100' : 'text-gray-500'
                           }`}>
-                            {message.timestamp.toLocaleTimeString()}
+                            {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </p>
                           {message.senderId === user.uid && (
                             <MessageStatus 
