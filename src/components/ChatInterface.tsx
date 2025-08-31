@@ -7,6 +7,7 @@ import { searchUsers, signOut } from '@/lib/auth';
 import { Chat, User as UserType, Message } from '@/types';
 import Profile from './Profile';
 import MessageStatus from './MessageStatus';
+import BlueTickBadge from './BlueTickBadge';
 
 // Debounce utility function
 function debounce<T extends (...args: any[]) => any>(
@@ -281,22 +282,34 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
                       className="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
                     >
                       <div className="flex items-center space-x-3">
-                        {searchUser.avatar ? (
-                          <img
-                            src={searchUser.avatar}
-                            alt={searchUser.name}
-                            className="w-6 h-6 md:w-8 md:h-8 rounded-full"
-                          />
-                        ) : (
-                          <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gray-300 flex items-center justify-center">
-                            <span className="text-gray-600 text-xs md:text-sm font-medium">
-                              {searchUser.name?.[0]?.toUpperCase() || 'U'}
-                            </span>
-                          </div>
-                        )}
+                        <div className="relative">
+                          {searchUser.avatar ? (
+                            <img
+                              src={searchUser.avatar}
+                              alt={searchUser.name}
+                              className="w-6 h-6 md:w-8 md:h-8 rounded-full"
+                            />
+                          ) : (
+                            <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gray-300 flex items-center justify-center">
+                              <span className="text-gray-600 text-xs md:text-sm font-medium">
+                                {searchUser.name?.[0]?.toUpperCase() || 'U'}
+                              </span>
+                            </div>
+                          )}
+                          {searchUser.blueTick?.status === 'VERIFIED' && (
+                            <div className="absolute -bottom-0.5 -right-0.5">
+                              <BlueTickBadge isVerified={true} size="sm" />
+                            </div>
+                          )}
+                        </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 text-sm md:text-base truncate">
-                            {highlightMatch(searchUser.name, searchTerm)}
+                          <div className="flex items-center space-x-1">
+                            <span className="font-medium text-gray-900 text-sm md:text-base truncate">
+                              {highlightMatch(searchUser.name, searchTerm)}
+                            </span>
+                            {searchUser.blueTick?.status === 'VERIFIED' && (
+                              <BlueTickBadge isVerified={true} size="sm" />
+                            )}
                           </div>
                           <div className="text-xs md:text-sm text-gray-600 truncate">
                             {highlightMatch(searchUser.email, searchTerm)}
@@ -327,23 +340,35 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
                 }`}
               >
                 <div className="flex items-center space-x-3">
-                  {chat.otherUser.avatar ? (
-                    <img
-                      src={chat.otherUser.avatar}
-                      alt={chat.otherUser.name}
-                      className="w-10 h-10 md:w-12 md:h-12 rounded-full"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-400 flex items-center justify-center">
-                      <span className="text-white text-sm font-medium">
-                        {chat.otherUser.name?.[0]?.toUpperCase() || 'U'}
-                      </span>
-                    </div>
-                  )}
+                  <div className="relative">
+                    {chat.otherUser.avatar ? (
+                      <img
+                        src={chat.otherUser.avatar}
+                        alt={chat.otherUser.name}
+                        className="w-10 h-10 md:w-12 md:h-12 rounded-full"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-400 flex items-center justify-center">
+                        <span className="text-white text-sm font-medium">
+                          {chat.otherUser.name?.[0]?.toUpperCase() || 'U'}
+                        </span>
+                      </div>
+                    )}
+                    {chat.otherUser.blueTick?.status === 'VERIFIED' && (
+                      <div className="absolute -bottom-0.5 -right-0.5">
+                        <BlueTickBadge isVerified={true} size="sm" />
+                      </div>
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <div className="font-medium text-gray-900 truncate text-sm md:text-base">
-                        {chat.otherUser.name}
+                      <div className="flex items-center space-x-1">
+                        <span className="font-medium text-gray-900 truncate text-sm md:text-base">
+                          {chat.otherUser.name}
+                        </span>
+                        {chat.otherUser.blueTick?.status === 'VERIFIED' && (
+                          <BlueTickBadge isVerified={true} size="sm" />
+                        )}
                       </div>
                       {chat.unreadCount && chat.unreadCount > 0 && (
                         <div className="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] h-5 flex items-center justify-center ml-2">
@@ -381,23 +406,35 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
                   >
                     ←
                   </button>
-                  {selectedChat.otherUser.avatar ? (
-                    <img
-                      src={selectedChat.otherUser.avatar}
-                      alt={selectedChat.otherUser.name}
-                      className="w-8 h-8 md:w-10 md:h-10 rounded-full"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-400 flex items-center justify-center">
-                      <span className="text-white text-sm font-medium">
-                        {selectedChat.otherUser.name?.[0]?.toUpperCase() || 'U'}
-                      </span>
-                    </div>
-                  )}
+                  <div className="relative">
+                    {selectedChat.otherUser.avatar ? (
+                      <img
+                        src={selectedChat.otherUser.avatar}
+                        alt={selectedChat.otherUser.name}
+                        className="w-8 h-8 md:w-10 md:h-10 rounded-full"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-400 flex items-center justify-center">
+                        <span className="text-white text-sm font-medium">
+                          {selectedChat.otherUser.name?.[0]?.toUpperCase() || 'U'}
+                        </span>
+                      </div>
+                    )}
+                    {selectedChat.otherUser.blueTick?.status === 'VERIFIED' && (
+                      <div className="absolute -bottom-0.5 -right-0.5">
+                        <BlueTickBadge isVerified={true} size="sm" />
+                      </div>
+                    )}
+                  </div>
                   <div>
-                    <h3 className="text-base md:text-lg font-semibold text-gray-900">
-                      {selectedChat.otherUser.name}
-                    </h3>
+                    <div className="flex items-center space-x-1">
+                      <h3 className="text-base md:text-lg font-semibold text-gray-900">
+                        {selectedChat.otherUser.name}
+                      </h3>
+                      {selectedChat.otherUser.blueTick?.status === 'VERIFIED' && (
+                        <BlueTickBadge isVerified={true} size="sm" />
+                      )}
+                    </div>
                     <p className="text-xs md:text-sm text-gray-600">
                       {selectedChat.otherUser.email}
                     </p>

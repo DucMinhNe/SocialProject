@@ -5,6 +5,8 @@ import { User } from '@/types';
 import { updateUserProfile, getUserById } from '@/lib/auth';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
+import BlueTickVerification from './BlueTickVerification';
+import BlueTickBadge from './BlueTickBadge';
 
 interface ProfileProps {
   onClose: () => void;
@@ -20,6 +22,7 @@ export default function Profile({ onClose }: ProfileProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [showBlueTickModal, setShowBlueTickModal] = useState(false);
 
   // Load user data
   useEffect(() => {
@@ -153,6 +156,63 @@ export default function Profile({ onClose }: ProfileProps) {
                 >
                   {getAvatarFallback(formData.name || userData.name)}
                 </div>
+                
+                {/* Blue Tick Badge */}
+                {userData.blueTick?.status === 'VERIFIED' && (
+                  <div className="absolute -bottom-1 -right-1">
+                    <BlueTickBadge isVerified={true} size="md" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Blue Tick Section */}
+            <div className="mb-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mr-3">
+                      <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-blue-800">Tick xanh</h4>
+                      <p className="text-sm text-blue-600">
+                        {userData.blueTick?.status === 'VERIFIED' 
+                          ? 'Tài khoản đã được xác minh' 
+                          : userData.blueTick?.status === 'PENDING'
+                          ? 'Đang chờ xét duyệt'
+                          : userData.blueTick?.status === 'REJECTED'
+                          ? 'Yêu cầu bị từ chối'
+                          : 'Xác minh tài khoản của bạn'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {(!userData.blueTick?.status || userData.blueTick.status === 'REJECTED') && (
+                    <button
+                      type="button"
+                      onClick={() => setShowBlueTickModal(true)}
+                      className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      {userData.blueTick?.status === 'REJECTED' ? 'Gửi lại' : 'Xin cấp'}
+                    </button>
+                  )}
+
+                  {userData.blueTick?.status === 'PENDING' && (
+                    <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm rounded-md">
+                      Chờ duyệt
+                    </span>
+                  )}
+
+                  {userData.blueTick?.status === 'VERIFIED' && (
+                    <span className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-md">
+                      Đã xác minh
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -247,6 +307,25 @@ export default function Profile({ onClose }: ProfileProps) {
               </button>
             </div>
           </form>
+        )}
+
+        {/* Blue Tick Verification Modal */}
+        {showBlueTickModal && userData && (
+          <BlueTickVerification
+            user={userData}
+            onClose={() => setShowBlueTickModal(false)}
+            onSuccess={() => {
+              setMessage({ type: 'success', text: 'Yêu cầu tick xanh đã được gửi!' });
+              // Reload user data to get updated blueTick status
+              if (user) {
+                getUserById(user.uid).then(updatedUser => {
+                  if (updatedUser) {
+                    setUserData(updatedUser);
+                  }
+                });
+              }
+            }}
+          />
         )}
       </div>
     </div>
