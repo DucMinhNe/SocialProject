@@ -40,8 +40,8 @@ export default function RegisterFeature() {
     try {
       await signUpWithEmail(email, password, name, avatar, phone, dateOfBirth ? new Date(dateOfBirth) : undefined, gender as Gender);
       router.push('/chat');
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'Đã xảy ra lỗi');
     } finally {
       setLoading(false);
     }
@@ -54,8 +54,8 @@ export default function RegisterFeature() {
     try {
       await signInWithGoogle();
       router.push('/chat');
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'Đã xảy ra lỗi');
     } finally {
       setLoading(false);
     }
