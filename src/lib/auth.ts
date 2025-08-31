@@ -15,10 +15,18 @@ import {
   getDocs 
 } from 'firebase/firestore';
 import { auth, db, googleProvider } from './firebase';
-import { User } from '@/types';
+import { User, Gender } from '@/types';
 
 // Đăng ký bằng email và password
-export const signUpWithEmail = async (email: string, password: string, name: string, avatar?: string) => {
+export const signUpWithEmail = async (
+  email: string, 
+  password: string, 
+  name: string, 
+  avatar?: string,
+  phone?: string,
+  dateOfBirth?: Date,
+  gender?: Gender
+) => {
   try {
     console.log('Starting signUpWithEmail...', { email, name });
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -32,6 +40,10 @@ export const signUpWithEmail = async (email: string, password: string, name: str
       email,
       avatar: avatar || '', // Avatar mặc định rỗng nếu không có
       password: '', // Không lưu password trong Firestore
+      role: 'USER',
+      phone,
+      dateOfBirth,
+      gender,
       createdAt: new Date(),
       lastLogin: new Date()
     };
@@ -66,6 +78,7 @@ export const signInWithEmail = async (email: string, password: string) => {
         name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
         email: firebaseUser.email || '',
         avatar: firebaseUser.photoURL || '',
+        role: 'USER' as const,
         createdAt: new Date(),
         lastLogin: new Date()
       };
@@ -109,6 +122,7 @@ export const signInWithGoogle = async () => {
         name: firebaseUser.displayName || '',
         email: firebaseUser.email || '',
         avatar: firebaseUser.photoURL || '', // Lấy avatar từ Google
+        role: 'USER' as const,
         createdAt: new Date(),
         lastLogin: new Date()
       };
@@ -141,7 +155,7 @@ export const signOut = async () => {
   }
 };
 
-// Tìm kiếm user theo keyword trong name hoặc email
+// Tìm kiếm user theo keyword trong name, email, hoặc phone
 export const searchUsers = async (searchTerm: string): Promise<User[]> => {
   try {
     if (!searchTerm.trim()) return [];
@@ -157,19 +171,24 @@ export const searchUsers = async (searchTerm: string): Promise<User[]> => {
       const userData = doc.data() as User;
       const nameMatches = userData.name?.toLowerCase().includes(searchTermLower);
       const emailMatches = userData.email?.toLowerCase().includes(searchTermLower);
+      const phoneMatches = userData.phone?.toLowerCase().includes(searchTermLower);
       
-      if (nameMatches || emailMatches) {
+      if (nameMatches || emailMatches || phoneMatches) {
         users.push(userData);
       }
     });
     
-    // Sắp xếp theo độ khớp: name match trước, sau đó email match
+    // Sắp xếp theo độ khớp: name match trước, phone match, sau đó email match
     users.sort((a, b) => {
       const aNameMatch = a.name?.toLowerCase().includes(searchTermLower);
       const bNameMatch = b.name?.toLowerCase().includes(searchTermLower);
+      const aPhoneMatch = a.phone?.toLowerCase().includes(searchTermLower);
+      const bPhoneMatch = b.phone?.toLowerCase().includes(searchTermLower);
       
       if (aNameMatch && !bNameMatch) return -1;
       if (!aNameMatch && bNameMatch) return 1;
+      if (aPhoneMatch && !bPhoneMatch) return -1;
+      if (!aPhoneMatch && bPhoneMatch) return 1;
       return 0;
     });
     
@@ -199,7 +218,7 @@ export const updateUserProfile = async (userId: string, updateData: Partial<User
     const userRef = doc(db, 'users', userId);
     
     // Chỉ cập nhật các field được phép thay đổi
-    const allowedFields = ['name', 'avatar'];
+    const allowedFields = ['name', 'avatar', 'phone', 'dateOfBirth', 'gender'];
     const filteredData: any = {};
     
     Object.keys(updateData).forEach(key => {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { User } from '@/types';
+import { User, Gender } from '@/types';
 import { updateUserProfile, getUserById } from '@/lib/auth';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
@@ -17,7 +17,10 @@ export default function Profile({ onClose }: ProfileProps) {
   const [userData, setUserData] = useState<User | null>(null);
   const [formData, setFormData] = useState({
     name: '',
-    avatar: ''
+    avatar: '',
+    phone: '',
+    dateOfBirth: '',
+    gender: '' as Gender | ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -35,7 +38,10 @@ export default function Profile({ onClose }: ProfileProps) {
             setUserData(userInfo);
             setFormData({
               name: userInfo.name || '',
-              avatar: userInfo.avatar || ''
+              avatar: userInfo.avatar || '',
+              phone: userInfo.phone || '',
+              dateOfBirth: userInfo.dateOfBirth ? userInfo.dateOfBirth.toISOString().split('T')[0] : '',
+              gender: userInfo.gender || ''
             });
           }
         } catch (error) {
@@ -50,7 +56,7 @@ export default function Profile({ onClose }: ProfileProps) {
     loadUserData();
   }, [user]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -78,14 +84,20 @@ export default function Profile({ onClose }: ProfileProps) {
 
       await updateUserProfile(user.uid, {
         name: formData.name.trim(),
-        avatar: formData.avatar.trim()
+        avatar: formData.avatar.trim(),
+        phone: formData.phone.trim() || undefined,
+        dateOfBirth: formData.dateOfBirth ? new Date(formData.dateOfBirth) : undefined,
+        gender: formData.gender as Gender || undefined
       });
 
       // Update local state
       setUserData(prev => prev ? {
         ...prev,
         name: formData.name.trim(),
-        avatar: formData.avatar.trim()
+        avatar: formData.avatar.trim(),
+        phone: formData.phone.trim() || undefined,
+        dateOfBirth: formData.dateOfBirth ? new Date(formData.dateOfBirth) : undefined,
+        gender: formData.gender as Gender || undefined
       } : null);
 
       setMessage({ type: 'success', text: 'Cập nhật thông tin thành công!' });
@@ -257,6 +269,53 @@ export default function Profile({ onClose }: ProfileProps) {
               <p className="text-xs text-gray-500 mt-1">
                 Để trống để sử dụng avatar mặc định (chữ cái đầu tên)
               </p>
+            </div>
+
+            {/* Phone */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Số điện thoại
+              </label>
+              <input
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleInputChange}
+                className="w-full p-2 md:p-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white placeholder-gray-500"
+                placeholder="0901234567"
+              />
+            </div>
+
+            {/* Date of Birth */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Ngày sinh
+              </label>
+              <input
+                type="date"
+                name="dateOfBirth"
+                value={formData.dateOfBirth}
+                onChange={handleInputChange}
+                className="w-full p-2 md:p-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+              />
+            </div>
+
+            {/* Gender */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Giới tính
+              </label>
+              <select
+                name="gender"
+                value={formData.gender}
+                onChange={handleInputChange}
+                className="w-full p-2 md:p-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+              >
+                <option value="">Chọn giới tính</option>
+                <option value="MALE">Nam</option>
+                <option value="FEMALE">Nữ</option>
+                <option value="OTHER">Khác</option>
+              </select>
             </div>
 
             {/* Message */}

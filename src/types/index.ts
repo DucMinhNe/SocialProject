@@ -1,4 +1,5 @@
 export type UserRole = 'USER' | 'ADMIN';
+export type Gender = 'MALE' | 'FEMALE' | 'OTHER';
 
 // Import BlueTick types
 export type BlueTickStatus = 'PENDING' | 'VERIFIED' | 'REJECTED';
@@ -21,6 +22,12 @@ export interface User {
   password?: string; // Không lưu password trong Firestore khi đăng nhập bằng Google
   role: UserRole; // Role của user
   blueTick?: BlueTick; // Optional blue tick information
+  
+  // New fields
+  phone?: string; // Số điện thoại
+  dateOfBirth?: Date; // Ngày sinh
+  gender?: Gender; // Giới tính
+  
   createdAt: Date;
   lastLogin: Date;
 }

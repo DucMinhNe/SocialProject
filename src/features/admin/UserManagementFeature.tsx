@@ -11,7 +11,7 @@ import {
   searchUsers 
 } from '@/lib/userService';
 import { logAdminAction } from '@/lib/adminService';
-import { User, UserRole } from '@/types';
+import { User, UserRole, Gender } from '@/types';
 import BlueTickManagement from './BlueTickManagement';
 import BlueTickBadge from '@/components/BlueTickBadge';
 
@@ -20,6 +20,9 @@ interface UserFormData {
   email: string;
   role: UserRole;
   avatar?: string;
+  phone?: string;
+  dateOfBirth?: string;
+  gender?: Gender | '';
 }
 
 export default function UserManagementFeature() {
@@ -39,6 +42,9 @@ export default function UserManagementFeature() {
     email: '',
     role: 'USER',
     avatar: '',
+    phone: '',
+    dateOfBirth: '',
+    gender: '',
   });
 
   // Get current user
@@ -81,7 +87,8 @@ export default function UserManagementFeature() {
       const searchLower = searchTerm.toLowerCase().trim();
       filtered = filtered.filter(user => 
         user.name.toLowerCase().includes(searchLower) ||
-        user.email.toLowerCase().includes(searchLower)
+        user.email.toLowerCase().includes(searchLower) ||
+        (user.phone && user.phone.toLowerCase().includes(searchLower))
       );
     }
 
@@ -131,6 +138,9 @@ export default function UserManagementFeature() {
           email: formData.email,
           role: formData.role,
           avatar: formData.avatar,
+          phone: formData.phone || undefined,
+          dateOfBirth: formData.dateOfBirth ? new Date(formData.dateOfBirth) : undefined,
+          gender: formData.gender as Gender || undefined,
         });
 
         // Log admin action
@@ -153,6 +163,9 @@ export default function UserManagementFeature() {
           email: formData.email,
           role: formData.role,
           avatar: formData.avatar,
+          phone: formData.phone || undefined,
+          dateOfBirth: formData.dateOfBirth ? new Date(formData.dateOfBirth) : undefined,
+          gender: formData.gender as Gender || undefined,
         });
 
         // Log admin action
@@ -172,7 +185,7 @@ export default function UserManagementFeature() {
 
       setShowModal(false);
       setEditingUser(null);
-      setFormData({ name: '', email: '', role: 'USER', avatar: '' });
+      setFormData({ name: '', email: '', role: 'USER', avatar: '', phone: '', dateOfBirth: '', gender: '' });
     } catch (error) {
       console.error('Error saving user:', error);
       alert('Có lỗi xảy ra khi lưu thông tin người dùng');
@@ -216,6 +229,9 @@ export default function UserManagementFeature() {
       email: user.email,
       role: user.role,
       avatar: user.avatar || '',
+      phone: user.phone || '',
+      dateOfBirth: user.dateOfBirth ? user.dateOfBirth.toISOString().split('T')[0] : '',
+      gender: user.gender || '',
     });
     setShowModal(true);
   };
@@ -223,7 +239,7 @@ export default function UserManagementFeature() {
   // Handle add new user
   const handleAddUser = () => {
     setEditingUser(null);
-    setFormData({ name: '', email: '', role: 'USER', avatar: '' });
+    setFormData({ name: '', email: '', role: 'USER', avatar: '', phone: '', dateOfBirth: '', gender: '' });
     setShowModal(true);
   };
 
@@ -327,7 +343,7 @@ export default function UserManagementFeature() {
         <div className="flex-1">
           <input
             type="text"
-            placeholder="Tìm kiếm theo tên hoặc email..."
+            placeholder="Tìm kiếm theo tên, email hoặc số điện thoại..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full px-3 py-2 text-sm md:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white placeholder-gray-500"
@@ -357,6 +373,9 @@ export default function UserManagementFeature() {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Email
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Số điện thoại
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Vai trò
@@ -390,6 +409,9 @@ export default function UserManagementFeature() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {user.email}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {user.phone || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -502,6 +524,38 @@ export default function UserManagementFeature() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white placeholder-gray-500"
                     placeholder="https://example.com/avatar.jpg"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Số điện thoại (tùy chọn)</label>
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white placeholder-gray-500"
+                    placeholder="0901234567"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ngày sinh (tùy chọn)</label>
+                  <input
+                    type="date"
+                    value={formData.dateOfBirth}
+                    onChange={(e) => setFormData({...formData, dateOfBirth: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Giới tính (tùy chọn)</label>
+                  <select
+                    value={formData.gender}
+                    onChange={(e) => setFormData({...formData, gender: e.target.value as Gender | ''})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                  >
+                    <option value="">Chọn giới tính</option>
+                    <option value="MALE">Nam</option>
+                    <option value="FEMALE">Nữ</option>
+                    <option value="OTHER">Khác</option>
+                  </select>
                 </div>
                 <div className="flex space-x-3 pt-4">
                   <button
