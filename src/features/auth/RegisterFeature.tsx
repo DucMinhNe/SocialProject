@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signUpWithEmail, signInWithGoogle } from '@/lib/auth';
+import { Gender } from '@/types';
 
 export default function RegisterFeature() {
   const [email, setEmail] = useState('');
@@ -11,6 +12,9 @@ export default function RegisterFeature() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [avatar, setAvatar] = useState('');
+  const [phone, setPhone] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [gender, setGender] = useState<Gender | ''>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
@@ -34,7 +38,7 @@ export default function RegisterFeature() {
     }
 
     try {
-      await signUpWithEmail(email, password, name, avatar);
+      await signUpWithEmail(email, password, name, avatar, phone, dateOfBirth ? new Date(dateOfBirth) : undefined, gender as Gender);
       router.push('/chat');
     } catch (error: any) {
       setError(error.message);
@@ -129,6 +133,59 @@ export default function RegisterFeature() {
               className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
               placeholder="https://example.com/avatar.jpg"
             />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+            Số điện thoại (tùy chọn)
+          </label>
+          <div className="mt-1">
+            <input
+              id="phone"
+              name="phone"
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
+              placeholder="0901234567"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700">
+            Ngày sinh (tùy chọn)
+          </label>
+          <div className="mt-1">
+            <input
+              id="dateOfBirth"
+              name="dateOfBirth"
+              type="date"
+              value={dateOfBirth}
+              onChange={(e) => setDateOfBirth(e.target.value)}
+              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
+            Giới tính (tùy chọn)
+          </label>
+          <div className="mt-1">
+            <select
+              id="gender"
+              name="gender"
+              value={gender}
+              onChange={(e) => setGender(e.target.value as Gender | '')}
+              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
+            >
+              <option value="">Chọn giới tính</option>
+              <option value="MALE">Nam</option>
+              <option value="FEMALE">Nữ</option>
+              <option value="OTHER">Khác</option>
+            </select>
           </div>
         </div>
 

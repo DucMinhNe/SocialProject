@@ -15,7 +15,7 @@ import {
   QuerySnapshot
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { User, UserRole } from '@/types';
+import { User, UserRole, Gender } from '@/types';
 
 // Types for dashboard
 export interface DashboardStats {
@@ -44,6 +44,14 @@ const convertDocToUser = (doc: any): User => {
     email: data.email || '',
     avatar: data.avatar || '',
     role: data.role || 'USER',
+    phone: data.phone,
+    dateOfBirth: data.dateOfBirth?.toDate(),
+    gender: data.gender,
+    blueTick: data.blueTick ? {
+      ...data.blueTick,
+      requestedAt: data.blueTick.requestedAt?.toDate(),
+      processedAt: data.blueTick.processedAt?.toDate()
+    } : undefined,
     createdAt: data.createdAt?.toDate() || new Date(),
     lastLogin: data.lastLogin?.toDate() || new Date(),
   };
@@ -239,6 +247,9 @@ export const createUser = async (userData: {
   email: string;
   role: UserRole;
   avatar?: string;
+  phone?: string;
+  dateOfBirth?: Date;
+  gender?: Gender;
 }): Promise<string> => {
   try {
     console.log('👤 Creating new user:', userData.email);
@@ -248,6 +259,9 @@ export const createUser = async (userData: {
       email: userData.email,
       role: userData.role,
       avatar: userData.avatar || '',
+      phone: userData.phone,
+      dateOfBirth: userData.dateOfBirth ? Timestamp.fromDate(userData.dateOfBirth) : undefined,
+      gender: userData.gender,
       createdAt: Timestamp.now(),
       lastLogin: Timestamp.now(),
     });
@@ -268,6 +282,9 @@ export const updateUser = async (
     email: string;
     role: UserRole;
     avatar: string;
+    phone: string;
+    dateOfBirth: Date;
+    gender: Gender;
   }>
 ): Promise<void> => {
   try {
@@ -362,7 +379,8 @@ export const searchUsers = async (
       const searchLower = searchTerm.toLowerCase().trim();
       users = users.filter(user => 
         user.name.toLowerCase().includes(searchLower) ||
-        user.email.toLowerCase().includes(searchLower)
+        user.email.toLowerCase().includes(searchLower) ||
+        (user.phone && user.phone.toLowerCase().includes(searchLower))
       );
     }
 
