@@ -23,7 +23,7 @@ export interface AdminAction {
   id: string;
   adminId: string;
   adminName: string;
-  action: 'CREATE_USER' | 'UPDATE_USER' | 'DELETE_USER' | 'BULK_UPDATE' | 'DELETE_MESSAGE' | 'BAN_USER' | 'UNBAN_USER';
+  action: 'CREATE_USER' | 'UPDATE_USER' | 'DELETE_USER' | 'BULK_UPDATE' | 'DELETE_MESSAGE' | 'BAN_USER' | 'UNBAN_USER' | 'APPROVE_BLUE_TICK' | 'REJECT_BLUE_TICK';
   targetId: string;
   targetType: 'USER' | 'MESSAGE' | 'CHAT';
   details: string;
