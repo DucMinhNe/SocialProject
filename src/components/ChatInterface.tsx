@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { User } from 'firebase/auth';
 import { getUserChats, getMessages, sendMessage, markMessagesAsRead, markMessagesAsDelivered, getUnreadCount } from '@/lib/chat';
-import { searchUsers, signOut } from '@/lib/auth';
+import { searchUsers, signOut, getUserById } from '@/lib/auth';
 import { Chat, User as UserType, Message } from '@/types';
 import Profile from './Profile';
 import MessageStatus from './MessageStatus';
@@ -55,6 +55,7 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
   const [showSearch, setShowSearch] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [currentUserData, setCurrentUserData] = useState<UserType | null>(null);
   
   // Ref để scroll xuống cuối messages
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -94,6 +95,22 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
   useEffect(() => {
     const unsubscribe = getUserChats(user.uid, setChats);
     return () => unsubscribe();
+  }, [user.uid]);
+
+  // Lấy thông tin người dùng hiện tại để hiển thị blue tick
+  useEffect(() => {
+    const loadCurrentUserData = async () => {
+      try {
+        const userData = await getUserById(user.uid);
+        if (userData) {
+          setCurrentUserData(userData);
+        }
+      } catch (error) {
+        console.error('Error loading current user data:', error);
+      }
+    };
+
+    loadCurrentUserData();
   }, [user.uid]);
 
   // Lấy tin nhắn của chat được chọn
@@ -214,23 +231,29 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
         <div className="p-4 border-b border-gray-200 bg-blue-600">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
-              {user.photoURL ? (
-                <img
-                  src={user.photoURL}
-                  alt={user.displayName || 'User'}
-                  className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-white"
-                />
-              ) : (
-                <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-blue-400 flex items-center justify-center border-2 border-white">
-                  <span className="text-white text-sm font-medium">
-                    {(user.displayName || user.email)?.[0]?.toUpperCase() || 'U'}
-                  </span>
-                </div>
-              )}
               <div>
+                {user.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt={user.displayName || 'User'}
+                    className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-white"
+                  />
+                ) : (
+                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-blue-400 flex items-center justify-center border-2 border-white">
+                    <span className="text-white text-sm font-medium">
+                      {(user.displayName || user.email)?.[0]?.toUpperCase() || 'U'}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center space-x-1">
                 <h2 className="text-base md:text-lg font-semibold text-white">
                   {user.displayName || user.email}
                 </h2>
+                {/* Blue tick badge next to name */}
+                {currentUserData?.blueTick?.status === 'VERIFIED' && (
+                  <BlueTickBadge isVerified={true} size="sm" />
+                )}
               </div>
             </div>
             <div className="flex items-center space-x-1 md:space-x-2">
@@ -282,7 +305,7 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
                       className="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
                     >
                       <div className="flex items-center space-x-3">
-                        <div className="relative">
+                        <div>
                           {searchUser.avatar ? (
                             <img
                               src={searchUser.avatar}
@@ -294,11 +317,6 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
                               <span className="text-gray-600 text-xs md:text-sm font-medium">
                                 {searchUser.name?.[0]?.toUpperCase() || 'U'}
                               </span>
-                            </div>
-                          )}
-                          {searchUser.blueTick?.status === 'VERIFIED' && (
-                            <div className="absolute -bottom-0.5 -right-0.5">
-                              <BlueTickBadge isVerified={true} size="sm" />
                             </div>
                           )}
                         </div>
@@ -340,7 +358,7 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
                 }`}
               >
                 <div className="flex items-center space-x-3">
-                  <div className="relative">
+                  <div>
                     {chat.otherUser.avatar ? (
                       <img
                         src={chat.otherUser.avatar}
@@ -354,11 +372,6 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
                         </span>
                       </div>
                     )}
-                    {chat.otherUser.blueTick?.status === 'VERIFIED' && (
-                      <div className="absolute -bottom-0.5 -right-0.5">
-                        <BlueTickBadge isVerified={true} size="sm" />
-                      </div>
-                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
@@ -367,7 +380,7 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
                           {chat.otherUser.name}
                         </span>
                         {chat.otherUser.blueTick?.status === 'VERIFIED' && (
-                          <BlueTickBadge isVerified={true} size="sm" />
+                          <BlueTickBadge isVerified={true} size="md" />
                         )}
                       </div>
                       {chat.unreadCount && chat.unreadCount > 0 && (
@@ -406,7 +419,7 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
                   >
                     ←
                   </button>
-                  <div className="relative">
+                  <div>
                     {selectedChat.otherUser.avatar ? (
                       <img
                         src={selectedChat.otherUser.avatar}
@@ -418,11 +431,6 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
                         <span className="text-white text-sm font-medium">
                           {selectedChat.otherUser.name?.[0]?.toUpperCase() || 'U'}
                         </span>
-                      </div>
-                    )}
-                    {selectedChat.otherUser.blueTick?.status === 'VERIFIED' && (
-                      <div className="absolute -bottom-0.5 -right-0.5">
-                        <BlueTickBadge isVerified={true} size="sm" />
                       </div>
                     )}
                   </div>

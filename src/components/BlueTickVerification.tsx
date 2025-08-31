@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { requestBlueTick } from '@/lib/blueTickService';
 import { User, BlueTick } from '@/types';
+import BlueTickBadge from './BlueTickBadge';
 
 interface BlueTickVerificationProps {
   user: User;
@@ -65,11 +66,7 @@ export default function BlueTickVerification({ user, onClose, onSuccess }: BlueT
         return (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mr-3">
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </div>
+              <BlueTickBadge isVerified={true} size="md" className="mr-3" />
               <div>
                 <h4 className="font-medium text-green-800">Đã được xác minh</h4>
                 <p className="text-sm text-green-600 mt-1">
@@ -118,11 +115,7 @@ export default function BlueTickVerification({ user, onClose, onSuccess }: BlueT
         <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mr-3">
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </div>
+              <BlueTickBadge isVerified={true} size="xl" className="mr-3" />
               Tick xanh
             </h2>
             <button
@@ -177,11 +170,7 @@ export default function BlueTickVerification({ user, onClose, onSuccess }: BlueT
       <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mr-3">
-              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-            </div>
+            <BlueTickBadge isVerified={true} size="xl" className="mr-3" />
             Xin cấp tick xanh
           </h2>
           <button
@@ -211,7 +200,7 @@ export default function BlueTickVerification({ user, onClose, onSuccess }: BlueT
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={5}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-gray-900 bg-white placeholder-gray-500"
               placeholder="Vui lòng mô tả lý do bạn muốn được cấp tick xanh. Ví dụ: Tôi là người nổi tiếng/influencer, có trang web chính thức, hoặc đại diện cho một tổ chức..."
               required
             />

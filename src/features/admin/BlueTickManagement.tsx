@@ -416,7 +416,7 @@ export default function BlueTickManagement({ activeTab, onTabChange }: BlueTickM
                   value={processReason}
                   onChange={(e) => setProcessReason(e.target.value)}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white placeholder-gray-500"
                   placeholder={processAction === 'VERIFIED' 
                     ? 'Ghi chú về việc duyệt tick xanh...'
                     : 'Vui lòng nhập lý do từ chối...'
