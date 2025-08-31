@@ -302,9 +302,9 @@ export default function UserManagementFeature() {
           </div>
 
       {/* Stats Row */}
-      <div className="bg-white p-4 rounded-lg shadow border-l-4 border-l-green-500">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+      <div className="bg-white p-3 md:p-4 rounded-lg shadow border-l-4 border-l-green-500">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             <div className="flex items-center">
               <div className="w-3 h-3 bg-green-400 rounded-full mr-2 animate-pulse"></div>
               <span className="text-sm text-gray-600">Realtime</span>
@@ -323,21 +323,21 @@ export default function UserManagementFeature() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow space-y-4 sm:space-y-0 sm:flex sm:items-center sm:space-x-4">
+      <div className="bg-white p-3 md:p-4 rounded-lg shadow space-y-3 sm:space-y-0 sm:flex sm:items-center sm:space-x-4">
         <div className="flex-1">
           <input
             type="text"
             placeholder="Tìm kiếm theo tên hoặc email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white placeholder-gray-500"
+            className="w-full px-3 py-2 text-sm md:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white placeholder-gray-500"
           />
         </div>
-        <div>
+        <div className="sm:w-auto">
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value as 'ALL' | UserRole)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+            className="w-full sm:w-auto px-3 py-2 text-sm md:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
           >
             <option value="ALL">Tất cả vai trò</option>
             <option value="USER">Người dùng</option>
