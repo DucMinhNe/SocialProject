@@ -52,9 +52,9 @@ export const signUpWithEmail = async (
     await setDoc(doc(db, 'users', firebaseUser.uid), userData);
     console.log('User data saved successfully');
     return { user: firebaseUser, userData };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in signUpWithEmail:', error);
-    throw new Error(error.message);
+    throw new Error(error instanceof Error ? error.message : 'Registration failed');
   }
 };
 

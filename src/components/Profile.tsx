@@ -101,8 +101,8 @@ export default function Profile({ onClose }: ProfileProps) {
       } : null);
 
       setMessage({ type: 'success', text: 'Cập nhật thông tin thành công!' });
-    } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+    } catch (error: unknown) {
+      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Đã xảy ra lỗi' });
     } finally {
       setIsUpdating(false);
     }
@@ -112,7 +112,7 @@ export default function Profile({ onClose }: ProfileProps) {
     try {
       new URL(string);
       return true;
-    } catch (_) {
+    } catch {
       return false;
     }
   };
