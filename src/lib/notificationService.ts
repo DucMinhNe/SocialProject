@@ -318,8 +318,8 @@ class NotificationService {
     try {
       const subscription = await this.registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: this.urlBase64ToUint8Array(VAPID_KEY)
-      });
+        applicationServerKey: VAPID_KEY       
+      }); 
 
       console.log('✅ Push subscription:', subscription);
       return subscription;

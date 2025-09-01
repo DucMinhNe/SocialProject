@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { notificationService } from '@/lib/notificationService';
 
 interface NotificationSettings {
@@ -42,25 +42,6 @@ export function useNotifications() {
     return () => unsubscribe();
   }, [user]);
 
-  // Setup FCM foreground listener
-  useEffect(() => {
-    if (settings.notificationsEnabled) {
-      notificationService.setupForegroundListener((payload) => {
-        console.log('📨 Received notification:', payload);
-        
-        // Show notification if tab is not focused
-        if (document.hidden && settings.messageNotifications) {
-          // FCM will handle this automatically
-        }
-        
-        // Play sound if enabled
-        if (settings.soundEnabled) {
-          playNotificationSound();
-        }
-      });
-    }
-  }, [settings.notificationsEnabled, settings.messageNotifications, settings.soundEnabled]);
-
   const playNotificationSound = useCallback(() => {
     try {
       // Create a simple notification sound
@@ -83,6 +64,25 @@ export function useNotifications() {
       console.log('Could not play notification sound:', error);
     }
   }, []);
+
+  // Setup FCM foreground listener
+  useEffect(() => {
+    if (settings.notificationsEnabled) {
+      notificationService.setupForegroundListener((payload) => {
+        console.log('📨 Received notification:', payload);
+        
+        // Show notification if tab is not focused
+        if (document.hidden && settings.messageNotifications) {
+          // FCM will handle this automatically
+        }
+        
+        // Play sound if enabled
+        if (settings.soundEnabled) {
+          playNotificationSound();
+        }
+      });
+    }
+  }, [settings.notificationsEnabled, settings.messageNotifications, settings.soundEnabled, playNotificationSound]);
 
   const showMessageNotification = useCallback((senderName: string, message: string, senderAvatar?: string) => {
     if (!settings.notificationsEnabled || !settings.messageNotifications) {

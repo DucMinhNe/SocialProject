@@ -1,26 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { User } from 'firebase/auth';
-import { getUserChats, getMessages, sendMessage, markMessagesAsRead, markMessagesAsDelivered, getUnreadCount } from '@/lib/chat';
+import { getUserChats, getMessages, sendMessage, markMessagesAsRead, markMessagesAsDelivered } from '@/lib/chat';
 import { searchUsers, signOut, getUserById } from '@/lib/auth';
 import { Chat, User as UserType, Message } from '@/types';
 import Profile from './Profile';
 import MessageStatus from './MessageStatus';
 import BlueTickBadge from './BlueTickBadge';
 import { useNotifications } from '@/hooks/useNotifications';
-
-// Utility function to calculate message age efficiently
-const getMessageAge = (timestamp: any): number => {
-  try {
-    const messageTime = timestamp instanceof Date 
-      ? timestamp.getTime()
-      : timestamp?.toDate?.().getTime() || Date.now();
-    return Date.now() - messageTime;
-  } catch {
-    return 0; // If error, consider it as recent message
-  }
-};
 
 // Debounce utility function
 function debounce<T extends (...args: any[]) => any>(
@@ -80,25 +68,27 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
 
   // Debounce search function
   const debounceSearch = useCallback(
-    debounce(async (term: string) => {
-      if (term.trim()) {
-        setIsSearching(true);
-        try {
-          const results = await searchUsers(term);
-          // Loại bỏ user hiện tại khỏi kết quả tìm kiếm
-          const filteredResults = results.filter(u => u.id !== user.uid);
-          setSearchResults(filteredResults);
-          setShowSearch(true);
-        } catch (error) {
-          console.error('Error searching users:', error);
-        } finally {
-          setIsSearching(false);
+    (term: string) => {
+      debounce(async (searchTerm: string) => {
+        if (searchTerm.trim()) {
+          setIsSearching(true);
+          try {
+            const results = await searchUsers(searchTerm);
+            // Loại bỏ user hiện tại khỏi kết quả tìm kiếm
+            const filteredResults = results.filter(u => u.id !== user.uid);
+            setSearchResults(filteredResults);
+            setShowSearch(true);
+          } catch (error) {
+            console.error('Error searching users:', error);
+          } finally {
+            setIsSearching(false);
+          }
+        } else {
+          setSearchResults([]);
+          setShowSearch(false);
         }
-      } else {
-        setSearchResults([]);
-        setShowSearch(false);
-      }
-    }, 300), // Delay 300ms
+      }, 300)(term); // Delay 300ms
+    },
     [user.uid]
   );
 
@@ -203,7 +193,7 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
   // Auto scroll khi có tin nhắn mới
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, scrollToBottom]);
 
   // Tìm kiếm realtime khi user gõ
   useEffect(() => {
