@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { notificationService } from '@/lib/notificationService';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -23,14 +23,7 @@ export default function NotificationSettings({ onClose }: NotificationSettingsPr
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      loadNotificationSettings();
-    }
-    setPermission(notificationService.getPermissionStatus());
-  }, [user]);
-
-  const loadNotificationSettings = async () => {
+  const loadNotificationSettings = useCallback(async () => {
     if (!user) return;
     
     try {
@@ -47,7 +40,14 @@ export default function NotificationSettings({ onClose }: NotificationSettingsPr
     } catch (error) {
       console.error('Error loading notification settings:', error);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadNotificationSettings();
+    }
+    setPermission(notificationService.getPermissionStatus());
+  }, [user, loadNotificationSettings]);
 
   const requestNotificationPermission = async () => {
     setLoading(true);
