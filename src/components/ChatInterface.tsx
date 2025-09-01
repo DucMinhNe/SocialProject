@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { User } from 'firebase/auth';
 import { getUserChats, getMessages, sendMessage, markMessagesAsRead, markMessagesAsDelivered, getUnreadCount } from '@/lib/chat';
 import { searchUsers, signOut, getUserById } from '@/lib/auth';
@@ -8,6 +8,19 @@ import { Chat, User as UserType, Message } from '@/types';
 import Profile from './Profile';
 import MessageStatus from './MessageStatus';
 import BlueTickBadge from './BlueTickBadge';
+import { useNotifications } from '@/hooks/useNotifications';
+
+// Utility function to calculate message age efficiently
+const getMessageAge = (timestamp: any): number => {
+  try {
+    const messageTime = timestamp instanceof Date 
+      ? timestamp.getTime()
+      : timestamp?.toDate?.().getTime() || Date.now();
+    return Date.now() - messageTime;
+  } catch {
+    return 0; // If error, consider it as recent message
+  }
+};
 
 // Debounce utility function
 function debounce<T extends (...args: any[]) => any>(
@@ -57,6 +70,9 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
   const [showProfile, setShowProfile] = useState(false);
   const [currentUserData, setCurrentUserData] = useState<UserType | null>(null);
   
+  // Notification hook
+  const { showMessageNotification, isEnabled: notificationsEnabled } = useNotifications();
+  
   // Ref để scroll xuống cuối messages
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -86,16 +102,55 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
     [user.uid]
   );
 
-  // Function to scroll to bottom
-  const scrollToBottom = () => {
+  // Function to scroll to bottom - memoized
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
-  // Lấy danh sách chat của user
+  // Lấy danh sách chat của user với notification logic
   useEffect(() => {
-    const unsubscribe = getUserChats(user.uid, setChats);
+    let previousChats: (Chat & { otherUser: UserType })[] = [];
+    
+    const unsubscribe = getUserChats(user.uid, (newChats) => {
+      setChats(newChats);
+      
+      // Check for new unread messages (only after initial load)
+      if (previousChats.length > 0 && notificationsEnabled) {
+        newChats.forEach(newChat => {
+          const previousChat = previousChats.find(chat => chat.id === newChat.id);
+          
+          // If this is a chat we're NOT currently viewing
+          const isCurrentChat = selectedChat?.id === newChat.id;
+          
+          // If unread count increased and we're not in this chat
+          if (previousChat && 
+              newChat.unreadCount && 
+              newChat.unreadCount > (previousChat.unreadCount || 0) &&
+              !isCurrentChat) {
+            
+            console.log('🔔 New unread message in chat:', {
+              chatId: newChat.id,
+              otherUser: newChat.otherUser.name,
+              newUnreadCount: newChat.unreadCount,
+              previousUnreadCount: previousChat.unreadCount || 0,
+              isCurrentChat
+            });
+            
+            // Show notification for new unread message
+            showMessageNotification(
+              newChat.otherUser.name,
+              newChat.lastMessage || 'Tin nhắn mới',
+              newChat.otherUser.avatar
+            );
+          }
+        });
+      }
+      
+      previousChats = newChats;
+    });
+    
     return () => unsubscribe();
-  }, [user.uid]);
+  }, [user.uid, notificationsEnabled, selectedChat?.id, showMessageNotification]);
 
   // Lấy thông tin người dùng hiện tại để hiển thị blue tick
   useEffect(() => {
@@ -131,22 +186,19 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
       // Đợi một chút để đảm bảo user đã xem tin nhắn
       const timer = setTimeout(async () => {
         await markMessagesAsRead(selectedChat.id, user.uid);
-        // Refresh chat list để cập nhật unread count
-        const updatedChats = await Promise.all(
-          chats.map(async (chat) => {
-            if (chat.id === selectedChat.id) {
-              const unreadCount = await getUnreadCount(chat.id, user.uid);
-              return { ...chat, unreadCount };
-            }
-            return chat;
-          })
+        // Chỉ cập nhật unread count cho chat hiện tại thay vì refresh toàn bộ
+        setChats(prevChats => 
+          prevChats.map(chat => 
+            chat.id === selectedChat.id 
+              ? { ...chat, unreadCount: 0 } 
+              : chat
+          )
         );
-        setChats(updatedChats);
       }, 1000);
       
       return () => clearTimeout(timer);
     }
-  }, [selectedChat, messages, user.uid, chats]);
+  }, [selectedChat, messages, user.uid]); // Loại bỏ 'chats' khỏi dependency để tránh infinite loop
 
   // Auto scroll khi có tin nhắn mới
   useEffect(() => {
@@ -170,7 +222,8 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
   };
 
   // Bắt đầu chat với user mới
-  const startChat = (otherUser: UserType) => {
+  // Bắt đầu chat với user mới - memoized
+  const startChat = useCallback((otherUser: UserType) => {
     const existingChat = chats.find(chat => 
       chat.participants.includes(otherUser.id)
     );
@@ -193,10 +246,10 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
     setShowSearch(false);
     setSearchTerm('');
     setSearchResults([]);
-  };
+  }, [chats, user.uid]);
 
-  // Gửi tin nhắn
-  const handleSendMessage = async (e: React.FormEvent) => {
+  // Gửi tin nhắn - memoized
+  const handleSendMessage = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (newMessage.trim() && selectedChat) {
       try {
@@ -209,15 +262,15 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
         console.error('Error sending message:', error);
       }
     }
-  };
+  }, [newMessage, selectedChat, user.uid]);
 
-  const handleSignOut = async () => {
+  const handleSignOut = useCallback(async () => {
     try {
       await signOut();
     } catch (error) {
       console.error('Error signing out:', error);
     }
-  };
+  }, []);
 
   return (
     <div className="flex h-screen bg-gray-100">
