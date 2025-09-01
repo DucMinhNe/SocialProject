@@ -23,10 +23,16 @@ export interface User {
   role: UserRole; // Role của user
   blueTick?: BlueTick; // Optional blue tick information
   
-  // New fields
+  // Personal info
   phone?: string; // Số điện thoại
   dateOfBirth?: Date; // Ngày sinh
   gender?: Gender; // Giới tính
+  
+  // Notification settings
+  notificationsEnabled?: boolean; // Push notifications bật/tắt
+  messageNotifications?: boolean; // Thông báo tin nhắn
+  soundEnabled?: boolean; // Âm thanh thông báo
+  fcmToken?: string; // Firebase Cloud Messaging token
   
   createdAt: Date;
   lastLogin: Date;

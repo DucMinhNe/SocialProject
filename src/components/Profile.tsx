@@ -7,6 +7,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
 import BlueTickVerification from './BlueTickVerification';
 import BlueTickBadge from './BlueTickBadge';
+import NotificationSettings from './NotificationSettings';
 
 interface ProfileProps {
   onClose: () => void;
@@ -26,6 +27,7 @@ export default function Profile({ onClose }: ProfileProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [showBlueTickModal, setShowBlueTickModal] = useState(false);
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
 
   // Load user data
   useEffect(() => {
@@ -224,6 +226,35 @@ export default function Profile({ onClose }: ProfileProps) {
               </div>
             </div>
 
+            {/* Notification Settings Section */}
+            <div className="mb-4">
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mr-3">
+                      <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5 5-5M7.188 7.188L9 6l5.657 5.657-1.414 1.414L9 8.829 7.188 7.188z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-orange-800">Thông báo</h4>
+                      <p className="text-sm text-orange-600">
+                        Cài đặt push notifications
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setShowNotificationSettings(true)}
+                    className="px-3 py-1 bg-orange-600 text-white text-sm rounded-md hover:bg-orange-700 transition-colors"
+                  >
+                    Cài đặt
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* Email (read-only) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -380,6 +411,13 @@ export default function Profile({ onClose }: ProfileProps) {
                 });
               }
             }}
+          />
+        )}
+
+        {/* Notification Settings Modal */}
+        {showNotificationSettings && (
+          <NotificationSettings
+            onClose={() => setShowNotificationSettings(false)}
           />
         )}
       </div>

@@ -17,6 +17,7 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
+export { app }; // Export app cho messaging
 
 console.log('Firebase initialized:', {
   projectId: firebaseConfig.projectId,
