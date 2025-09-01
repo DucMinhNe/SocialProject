@@ -1,36 +1,131 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Social Chat App
 
-## Getting Started
+A modern real-time chat application built with Next.js, Firebase, and TypeScript.
 
-First, run the development server:
+## 🚀 Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Real-time Chat**: Instant messaging with live updates
+- **User Authentication**: Google Auth and email/password login
+- **Message Status**: Sent, delivered, and read indicators
+- **Push Notifications**: Browser notifications for new messages
+- **User Profiles**: Avatar, blue tick verification system
+- **Admin Panel**: User management and blue tick verification
+- **Responsive Design**: Works on desktop and mobile
+
+## 🛠️ Tech Stack
+
+- **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
+- **Backend**: Firebase (Firestore, Auth, Cloud Messaging)
+- **State Management**: React Hooks, Context API
+- **Notifications**: Firebase Cloud Messaging, Web Push API
+- **Deployment**: Vercel
+
+## 📂 Project Structure
+
+```
+src/
+├── app/                 # Next.js app router pages
+├── components/          # Reusable React components
+├── features/           # Feature-based modules
+├── hooks/              # Custom React hooks
+├── lib/                # Utility functions and services
+└── types/              # TypeScript type definitions
+
+docs/                   # Project documentation
+public/                 # Static assets
+scripts/                # Utility scripts
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 📚 Documentation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+All project documentation is organized in the [`docs/`](./docs/) folder:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- [Chat Features](./docs/README-CHAT.md)
+- [Notification System](./docs/NOTIFICATION-USAGE.md)
+- [Performance Optimization](./docs/PERFORMANCE-OPTIMIZATION.md)
+- [Features Structure](./docs/FEATURES-STRUCTURE.md)
+- [Scripts Usage](./docs/SCRIPTS-README.md)
 
-## Learn More
+## 🚦 Getting Started
 
-To learn more about Next.js, take a look at the following resources:
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd SocialProject
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+3. **Setup environment variables**
+   - Copy `.env.local.example` to `.env.local`
+   - Add your Firebase configuration
 
-## Deploy on Vercel
+4. **Run the development server**
+   ```bash
+   npm run dev
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+5. **Open your browser**
+   - Navigate to `http://localhost:3000`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🔧 Environment Variables
+
+Required environment variables in `.env.local`:
+
+```env
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
+NEXT_PUBLIC_VAPID_KEY=
+```
+
+## 📱 Features Overview
+
+### Chat System
+- Real-time messaging with Firestore
+- Message status tracking (sent/delivered/read)
+- User search and chat initialization
+- Emoji and text support
+
+### Notifications
+- Browser push notifications
+- Sound notifications
+- FCM integration for background notifications
+- User preference settings
+
+### User Management
+- Google OAuth and email/password auth
+- User profiles with avatars
+- Blue tick verification system
+- Admin panel for user management
+
+## 🚀 Deployment
+
+The app is configured for deployment on Vercel:
+
+```bash
+npm run build
+npm start
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add documentation to the `docs/` folder if needed
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 📞 Support
+
+For questions and support, please check the documentation in the [`docs/`](./docs/) folder or open an issue.
