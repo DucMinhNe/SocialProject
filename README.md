@@ -126,9 +126,13 @@ Firestore collections: `users`, `chats`, `messages`, `adminActions`, `reportedMe
 
 2. **Configure Firebase**
 
-   Replace the `firebaseConfig` object with your own project's web config in both:
-   - [`src/lib/firebase.ts`](./src/lib/firebase.ts)
-   - [`public/sw.js`](./public/sw.js) (the service worker initializes Firebase independently)
+   Copy the example env file and fill in your own project's web config (*Firebase Console → Project Settings → General → Your apps*):
+
+   ```bash
+   cp .env.local.example .env.local
+   ```
+
+   > Note: [`public/sw.js`](./public/sw.js) initializes Firebase independently and can't read environment variables — replace its `firebaseConfig` object with the same values.
 
 3. **Set the Web Push key**
 

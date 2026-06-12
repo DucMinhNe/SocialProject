@@ -3,7 +3,7 @@ import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { app } from './firebase';
 
 // Web Push VAPID keys - lấy từ environment variables
-const VAPID_KEY = process.env.NEXT_PUBLIC_VAPID_KEY || 'BPIw3jhU1eL-XueQTi995baYvYTQ-VMEpZCvIwRGi7-jo3VbQ2D-Wok0ZvoRsg1KNzHi2E2l4P5dG_4a1eTFv_s';
+const VAPID_KEY = process.env.NEXT_PUBLIC_VAPID_KEY || '';
 
 // Modern browser detection
 const isModernBrowser = () => {
