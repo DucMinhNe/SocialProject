@@ -1,133 +1,185 @@
 # Social Chat App
 
-A modern real-time chat application built with Next.js, Firebase, and TypeScript.
+**A real-time 1-to-1 messaging platform with read receipts, push notifications, a blue-tick verification workflow, and a full live-updating admin console — built on Next.js 15, React 19, and Firebase.**
 
-## 🚀 Features
+![Next.js](https://img.shields.io/badge/Next.js-15.5-000000?logo=nextdotjs&logoColor=white)
+![React](https://img.shields.io/badge/React-19.1-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
+![Firebase](https://img.shields.io/badge/Firebase-12-DD2C00?logo=firebase&logoColor=white)
 
-- **Real-time Chat**: Instant messaging with live updates
-- **User Authentication**: Google Auth and email/password login
-- **Message Status**: Sent, delivered, and read indicators
-- **Push Notifications**: Browser notifications for new messages
-- **User Profiles**: Avatar, blue tick verification system
-- **Admin Panel**: User management and blue tick verification
-- **Responsive Design**: Works on desktop and mobile
+Everything updates in real time — chats, message status, admin dashboards, and verification queues are all driven by live Firestore listeners, with no polling and no page refreshes.
 
-## 🛠️ Tech Stack
+## Features
 
-- **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
-- **Backend**: Firebase (Firestore, Auth, Cloud Messaging)
-- **State Management**: React Hooks, Context API
-- **Notifications**: Firebase Cloud Messaging, Web Push API
-- **Deployment**: Vercel
+### Messaging
+- **Real-time 1-to-1 chat** powered by Firestore `onSnapshot` listeners — messages appear instantly on both sides.
+- **Full message status lifecycle**: `sent → delivered → read`, with `readAt` timestamps and batched status updates.
+- **Unread counters** per conversation, computed live for the chat list.
+- **Deterministic chat IDs** (sorted user-ID pair), so a conversation between two users is always created exactly once.
+- **Debounced user search** by name, email, or phone with relevance-ranked results to start new conversations.
 
-## 📂 Project Structure
+### Notifications
+- **Firebase Cloud Messaging integration**: VAPID-based FCM token retrieval, a foreground `onMessage` listener, and a dedicated service worker ([`public/sw.js`](./public/sw.js)) that renders background notifications with click-to-open actions.
+- **Browser notifications** for incoming messages (sender name + avatar) when the conversation isn't focused.
+- **Notification sound** synthesized on the fly with the Web Audio API — no audio asset needed.
+- **Per-user preferences** persisted to Firestore: notifications on/off, message alerts, and sound, with a settings UI.
+- **Capability detection**: secure-context and browser-API checks degrade gracefully when push isn't supported.
+
+### Accounts & profiles
+- **Email/password and Google OAuth** sign-in via Firebase Auth, with automatic Firestore profile provisioning on first login and `lastLogin` tracking.
+- **Rich profiles**: avatar, phone, date of birth, gender — editable through an allow-listed update path so clients can't write protected fields like `role`.
+- **Auth-aware routing**: the landing page redirects signed-in users straight to `/chat` and guests to `/auth/login`.
+
+### Blue-tick verification
+- **User-initiated requests** with a stated reason, tracked through a `PENDING → VERIFIED / REJECTED` workflow.
+- **Admin review queues** (pending and processed) streamed in real time, with the processing admin, timestamp, and decision note recorded on each request.
+- **Verified badge** rendered next to user names across the app.
+
+### Admin console (`/admin`)
+- **Role-gated**: the admin layout verifies `role === 'ADMIN'` from Firestore and redirects everyone else.
+- **Live dashboard**: user stats, recent signups, chat/message stats, top active users, and system metrics — all real-time subscriptions.
+- **User management**: searchable user table, create/update/delete, bulk actions, and ban/unban.
+- **Moderation**: message reporting, review of reported messages, and message deletion.
+- **Audit log**: every admin action is recorded to an `adminActions` collection.
+- **CSV export** of user and chat data, generated client-side from Firestore.
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Framework | [Next.js](https://nextjs.org/) 15.5 (App Router, Turbopack) |
+| UI | [React](https://react.dev/) 19.1, [Tailwind CSS](https://tailwindcss.com/) 4 |
+| Language | [TypeScript](https://www.typescriptlang.org/) 5 (strict) |
+| Backend-as-a-service | [Firebase](https://firebase.google.com/) 12 — Authentication, Cloud Firestore, Cloud Messaging |
+| Auth bindings | [react-firebase-hooks](https://github.com/CSFrequency/react-firebase-hooks) 5.1 |
+| Linting | ESLint 9 (flat config) + `eslint-config-next` |
+
+## Architecture
+
+The app follows a **thin pages → feature modules → service layer** pattern:
 
 ```
-src/
-├── app/                 # Next.js app router pages
-├── components/          # Reusable React components
-├── features/           # Feature-based modules
-├── hooks/              # Custom React hooks
-├── lib/                # Utility functions and services
-└── types/              # TypeScript type definitions
-
-docs/                   # Project documentation
-public/                 # Static assets
-scripts/                # Utility scripts
+Route (src/app/…/page.tsx)  →  Feature (src/features/…)  →  Services (src/lib/…)  →  Firebase
 ```
 
-## 📚 Documentation
+- **Pages are one-liners** — every App Router page just renders a feature component (e.g. `/chat` renders `ChatFeature`), keeping routing and logic fully decoupled.
+- **Feature modules** (`auth`, `chat`, `home`, `admin`) own their UI state and compose shared components.
+- **Service layer** (`src/lib`) encapsulates all Firebase access: `chat.ts` (messaging + status), `auth.ts` (sign-in flows + user search), `notificationService.ts` (FCM + service-worker lifecycle, singleton), `adminService.ts` (moderation + audit log), `blueTickService.ts` (verification workflow), `userService.ts` and `dashboardService.ts` (admin data + CSV export). Real-time services hand back unsubscribe functions and keep listener registries with `cleanupAll*Listeners()` helpers to prevent leaks.
 
-All project documentation is organized in the [`docs/`](./docs/) folder:
+### Message flow
 
-- [Chat Features](./docs/README-CHAT.md)
-- [Notification System](./docs/NOTIFICATION-USAGE.md)
-- [Performance Optimization](./docs/PERFORMANCE-OPTIMIZATION.md)
-- [Features Structure](./docs/FEATURES-STRUCTURE.md)
-- [Scripts Usage](./docs/SCRIPTS-README.md)
+```mermaid
+sequenceDiagram
+    participant A as Sender
+    participant FS as Firestore
+    participant B as Recipient
 
-## 🚦 Getting Started
+    A->>FS: sendMessage() — write to messages, update chats.lastMessage
+    FS-->>B: onSnapshot pushes new message (status: sent)
+    B->>FS: markMessagesAsDelivered() when online
+    B->>FS: markMessagesAsRead() when chat is opened (sets readAt)
+    FS-->>A: onSnapshot updates status ticks in real time
+    Note over B: Browser notification + Web Audio sound<br/>if the conversation isn't focused
+```
 
-1. **Clone the repository**
+### Data model
+
+Firestore collections: `users`, `chats`, `messages`, `adminActions`, `reportedMessages`. The composite indexes required by the chat-list and status queries are version-controlled in [`firestore.indexes.json`](./firestore.indexes.json) and deployable via the Firebase CLI.
+
+## Project structure
+
+```
+├── src/
+│   ├── app/                # Next.js App Router — thin route wrappers
+│   │   ├── auth/           #   /auth/login, /auth/register
+│   │   ├── chat/           #   /chat — the messenger UI
+│   │   └── admin/          #   /admin, /admin/users — role-gated console
+│   ├── features/           # Feature modules (auth, chat, home, admin)
+│   ├── components/         # Shared UI (ChatInterface, MessageStatus, BlueTickBadge, …)
+│   ├── hooks/              # useNotifications — preferences, FCM listener, sound
+│   ├── lib/                # Firebase service layer (chat, auth, admin, notifications, …)
+│   └── types/              # Shared TypeScript models (User, Message, Chat, BlueTick)
+├── public/sw.js            # FCM service worker for background notifications
+├── firebase.json           # Firebase project config (Firestore rules + indexes)
+├── firestore.indexes.json  # Composite indexes for chat & status queries
+├── firestore.rules         # Firestore security rules
+└── docs/                   # In-depth feature documentation
+```
+
+## Getting started
+
+### Prerequisites
+
+- **Node.js 18.18+** (Node 20 LTS recommended)
+- A **Firebase project** with **Authentication** (Email/Password + Google providers) and **Cloud Firestore** enabled
+
+### Setup
+
+1. **Clone and install**
+
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/DucMinhNe/SocialProject.git
    cd SocialProject
-   ```
-
-2. **Install dependencies**
-   ```bash
    npm install
    ```
 
-3. **Setup environment variables**
-   - Copy `.env.local.example` to `.env.local`
-   - Add your Firebase configuration
+2. **Configure Firebase**
 
-4. **Run the development server**
+   Replace the `firebaseConfig` object with your own project's web config in both:
+   - [`src/lib/firebase.ts`](./src/lib/firebase.ts)
+   - [`public/sw.js`](./public/sw.js) (the service worker initializes Firebase independently)
+
+3. **Set the Web Push key**
+
+   Generate a VAPID key pair in *Firebase Console → Project Settings → Cloud Messaging* and put it in `.env.local`:
+
+   ```env
+   NEXT_PUBLIC_VAPID_KEY=your-vapid-public-key
+   ```
+
+4. **Deploy Firestore rules & indexes** (optional, requires the Firebase CLI)
+
+   ```bash
+   firebase deploy --only firestore
+   ```
+
+   > Note: the committed [`firestore.rules`](./firestore.rules) are wide-open development rules — lock them down before any production use.
+
+5. **Run the dev server** (Turbopack)
+
    ```bash
    npm run dev
    ```
 
-5. **Open your browser**
-   - Navigate to `http://localhost:3000`
+   Open [http://localhost:3000](http://localhost:3000) — you'll be redirected to the login page, and to `/chat` once signed in.
 
-## 🔧 Environment Variables
+### Admin access
 
-Required environment variables in `.env.local`:
+Set `role: "ADMIN"` on a user's document in the Firestore `users` collection to unlock the admin console at `/admin`.
 
-```env
-NEXT_PUBLIC_FIREBASE_API_KEY=
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
-NEXT_PUBLIC_FIREBASE_APP_ID=
-NEXT_PUBLIC_VAPID_KEY=
-```
-
-## 📱 Features Overview
-
-### Chat System
-- Real-time messaging with Firestore
-- Message status tracking (sent/delivered/read)
-- User search and chat initialization
-- Emoji and text support
-
-### Notifications
-- Browser push notifications
-- Sound notifications
-- FCM integration for background notifications
-- User preference settings
-
-### User Management
-- Google OAuth and email/password auth
-- User profiles with avatars
-- Blue tick verification system
-- Admin panel for user management
-
-## 🚀 Deployment
-
-The app is configured for deployment on Vercel:
+### Production build
 
 ```bash
 npm run build
 npm start
 ```
 
-## 🤝 Contributing
+The app is a standard Next.js project and deploys to any Next.js-compatible host (e.g. Vercel).
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add documentation to the `docs/` folder if needed
-5. Submit a pull request
+## Documentation
 
-## 📄 License
+Detailed write-ups live in the [`docs/`](./docs/) folder (written in Vietnamese for the project team):
 
-This project is licensed under the MIT License.
+- [Chat features](./docs/README-CHAT.md) and the [message status system](./docs/MESSAGE-STATUS.md)
+- [Notification usage](./docs/NOTIFICATION-USAGE.md) and [notification logic](./docs/NOTIFICATION-LOGIC.md)
+- [Performance optimizations](./docs/PERFORMANCE-OPTIMIZATION.md)
+- [Feature module structure](./docs/FEATURES-STRUCTURE.md) and the [service layer](./docs/README-SERVICES.md)
+- [User schema](./docs/USER-FIELDS-UPDATE.md)
 
-## 📞 Support
+## Contributing
 
-For questions and support, please check the documentation in the [`docs/`](./docs/) folder or open an issue.
-
-_This project is under active maintenance._
+1. Fork the repository and create a feature branch.
+2. Make your changes (`npm run lint` should pass).
+3. Update the relevant docs in `docs/` if behavior changes.
+4. Open a pull request.
